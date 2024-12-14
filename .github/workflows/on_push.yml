@@ -12,22 +12,22 @@ jobs:
             name: windows
             arch: x64
             lib_name: v8_monolith.lib
-          - os: ubuntu-latest
-            name: linux
-            arch: x64
-            lib_name: libv8_monolith.a
-#           - os: macos-latest
-#             name: macos
-#             arch: x64
-#             lib_name: libv8_monolith.a
-#           - os: macos-latest
-#             name: macos
-#             arch: arm64
-#             lib_name: libv8_monolith.a
-#           - os: macos-latest
-#             name: ios
-#             arch: arm64
-#             lib_name: libv8_monolith.a
+#          - os: ubuntu-latest
+#            name: linux
+#            arch: x64
+#            lib_name: libv8_monolith.a
+#          - os: macos-latest
+#            name: macos
+#            arch: x64
+#            lib_name: libv8_monolith.a
+#          - os: macos-latest
+#            name: macos
+#            arch: arm64
+#            lib_name: libv8_monolith.a
+#          - os: macos-latest
+#            name: ios
+#            arch: arm64
+#            lib_name: libv8_monolith.a
     env:
       DEPOT_TOOLS_UPDATE: 0
       DEPOT_TOOLS_WIN_TOOLCHAIN: 0
@@ -53,7 +53,8 @@ jobs:
       - name: Checkout V8 source
         run: |
           fetch v8
-          cd v8
+          dir .
+          cd ./v8
           git checkout ${{ env.V8_VERSION }}
           gclient sync
 
