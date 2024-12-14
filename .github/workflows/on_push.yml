@@ -29,7 +29,6 @@ jobs:
 #            arch: arm64
 #            lib_name: libv8_monolith.a
     env:
-      DEPOT_TOOLS_UPDATE: 0
       DEPOT_TOOLS_WIN_TOOLCHAIN: 0
       NINJA_SUMMARIZE_BUILD: 1
     steps:
@@ -53,7 +52,6 @@ jobs:
       - name: Checkout V8 source
         run: |
           fetch v8
-          dir .
           cd ./v8
           git checkout ${{ env.V8_VERSION }}
           gclient sync
