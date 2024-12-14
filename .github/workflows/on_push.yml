@@ -65,6 +65,7 @@ jobs:
           Copy-Item "../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" -Destination "./out.gn/${{ matrix.config.arch }}.release/args.gn" -force
           gn gen out.gn/${{ matrix.config.arch }}.release
           Get-Content ./out.gn/${{ matrix.config.arch }}.release/args.gn | Write-Output
+          clang++ --version
           ninja v8_monolith -j 4 -C out.gn/${{ matrix.config.arch }}.release/
           Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
 
