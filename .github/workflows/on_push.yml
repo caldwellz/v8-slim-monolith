@@ -1,0 +1,94 @@
+name: Build V8 Static Library
+on: push
+jobs:
+  build:
+    name: ${{ matrix.config.name }}_${{ matrix.config.arch }}
+    runs-on: ${{ matrix.config.os }}
+    if: '!startsWith(github.event.head_commit.message, "[Skip]")'
+    strategy:
+      matrix:
+        config:
+          - os: windows-latest
+            name: windows
+            arch: x64
+            lib_name: v8_monolith.lib
+          - os: ubuntu-latest
+            name: linux
+            arch: x64
+            lib_name: libv8_monolith.a
+#           - os: macos-latest
+#             name: macos
+#             arch: x64
+#             lib_name: libv8_monolith.a
+#           - os: macos-latest
+#             name: macos
+#             arch: arm64
+#             lib_name: libv8_monolith.a
+#           - os: macos-latest
+#             name: ios
+#             arch: arm64
+#             lib_name: libv8_monolith.a
+    env:
+      DEPOT_TOOLS_UPDATE: 0
+      DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+      NINJA_SUMMARIZE_BUILD: 1
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Get target V8 version
+        id: version
+        shell: pwsh
+        run: |
+          $version = Get-Content -Path V8_VERSION
+          If ('${{ github.event.inputs.version }}' -ne '') { $version = "${{ github.event.inputs.version }}" }
+          echo "V8_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install depot tools
+        shell: pwsh
+        run: |
+          git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          echo "$pwd/depot_tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Checkout V8 source
+        run: |
+          fetch v8
+          cd v8
+          git checkout ${{ env.V8_VERSION }}
+          gclient sync
+
+      - name: Build and compress V8 monolith
+        shell: pwsh
+        run: |
+          Set-Location -Path v8
+          python tools/dev/v8gen.py ${{ matrix.config.arch }}.release
+          Copy-Item "../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" -Destination "./out.gn/${{ matrix.config.arch }}.release/args.gn" -force
+          gn gen out.gn/${{ matrix.config.arch }}.release
+          Get-Content ./out.gn/${{ matrix.config.arch }}.release/args.gn | Write-Output
+          ninja v8_monolith -j 4 -C out.gn/${{ matrix.config.arch }}.release/
+          Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+
+      - name: Release V8 monolith
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          name: V8 Release ${{ env.V8_VERSION }}
+          tag_name: v${{ env.V8_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Since at least the Windows target will always be enabled, package the includes from its build
+      - name: Prepare out directory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType directory -Path ./out/
+          Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./out/v8 -Container
+          Compress-Archive -Path ./out/v8 -DestinationPath ./include.zip
+      - name: Release V8 header files
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./include.zip
+          name: V8 Release ${{ env.V8_VERSION }}
+          tag_name: v${{ env.V8_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
