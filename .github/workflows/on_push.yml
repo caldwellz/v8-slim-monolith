@@ -12,10 +12,10 @@ jobs:
             name: windows
             arch: x64
             lib_name: v8_monolith.lib
-#          - os: ubuntu-latest
-#            name: linux
-#            arch: x64
-#            lib_name: libv8_monolith.a
+          - os: ubuntu-latest
+            name: linux
+            arch: x64
+            lib_name: libv8_monolith.a
 #          - os: macos-latest
 #            name: macos
 #            arch: x64
