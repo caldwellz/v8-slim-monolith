@@ -1,9 +1,8 @@
 # Platform-specific toolchain config
 target_cpu="arm64"
-clang_use_chrome_plugins=false
-is_clang=true
 
 # Disabling custom libcxx is needed to avoid linker errors in embedding programs
+clang_use_chrome_plugins=false
 use_custom_libcxx=false
 use_custom_libcxx_for_host=false
 
@@ -18,7 +17,6 @@ v8_enable_debugging_features=false
 # Build a single static lib
 is_component_build=false
 v8_monolithic=true
-v8_static_library=true
 v8_use_external_startup_data=false
 
 # Configure future/extra features
@@ -30,27 +28,12 @@ v8_enable_javascript_promise_hooks=false
 v8_enable_pointer_compression=true
 
 # Minimize binary size by disabling Intl, WebAssembly, the sandbox, and debugging stuff
-archive_seed_corpus=false
-exclude_unwind_tables=true
-libcxx_natvis_include=false
-register_fuzztests_in_test_suites=false
-use_debug_fission=false
-use_dummy_lastchange=true
-v8_depend_on_icu_data_file=false
-v8_enable_backtrace=false
-v8_enable_builtins_optimization=true
-v8_enable_disassembler=false
-v8_enable_etw_stack_walking=false
+icu_use_data_file=false
 v8_enable_fuzztest=false
 v8_enable_gdbjit=false
 v8_enable_i18n_support=false
 v8_enable_maglev_graph_printer=false
-v8_enable_memory_corruption_api=false
-v8_enable_runtime_call_stats=false
 v8_enable_sandbox=false
 v8_enable_snapshot_compression=true
 v8_enable_system_instrumentation=false
-v8_enable_verify_heap=false
 v8_enable_webassembly=false
-v8_symbol_level=0
-v8_wasm_random_fuzzers=false
