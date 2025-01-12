@@ -16,6 +16,8 @@ is_debug=false
 is_official_build=false
 is_on_release_branch=true
 v8_enable_debugging_features=false
+strip_debug_info=true
+symbol_level=0
 
 # Build a single static lib
 is_component_build=false
