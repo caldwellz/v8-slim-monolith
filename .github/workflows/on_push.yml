@@ -57,10 +57,9 @@ jobs:
 
       - name: Checkout V8 source
         run: |
-          fetch v8
+          git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
           cd ./v8
-          git checkout ${{ env.V8_VERSION }}
-          gclient sync
+          gclient sync --upstream --no-history
 
       # Since at least the Windows target will always be enabled, package the includes from its build
       - name: Prepare out directory
