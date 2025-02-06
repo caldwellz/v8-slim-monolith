@@ -83,7 +83,7 @@ jobs:
         run: |
           Set-Location -Path v8
           python tools/dev/v8gen.py ${{ matrix.config.arch }}.release
-          Get-Content "../targets/shared.args.gn" "../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
+          Get-Content "../targets/shared.args.gn","../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
           gn gen out.gn/${{ matrix.config.arch }}.release
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           clang++ --version
