@@ -19,18 +19,18 @@ jobs:
             name: linux
             arch: x64
             lib_name: libv8_monolith.a
-#          - os: macos-latest
-#            name: macos
-#            arch: x64
-#            lib_name: libv8_monolith.a
-#          - os: macos-latest
-#            name: macos
-#            arch: arm64
-#            lib_name: libv8_monolith.a
-#          - os: macos-latest
-#            name: ios
-#            arch: arm64
-#            lib_name: libv8_monolith.a
+    #          - os: macos-latest
+    #            name: macos
+    #            arch: x64
+    #            lib_name: libv8_monolith.a
+    #          - os: macos-latest
+    #            name: macos
+    #            arch: arm64
+    #            lib_name: libv8_monolith.a
+    #          - os: macos-latest
+    #            name: ios
+    #            arch: arm64
+    #            lib_name: libv8_monolith.a
     env:
       DEPOT_TOOLS_WIN_TOOLCHAIN: 0
       NINJA_SUMMARIZE_BUILD: 1
@@ -82,9 +82,9 @@ jobs:
         run: |
           Set-Location -Path v8
           python tools/dev/v8gen.py ${{ matrix.config.arch }}.release
-          Copy-Item "../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" -Destination "./out.gn/${{ matrix.config.arch }}.release/args.gn" -force
+          Get-Content "../targets/shared.args.gn" "../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
           gn gen out.gn/${{ matrix.config.arch }}.release
-          Get-Content ./out.gn/${{ matrix.config.arch }}.release/args.gn | Write-Output
+          Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           clang++ --version
           ninja -j 8 -C out.gn/${{ matrix.config.arch }}.release/ v8_monolith
           Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
