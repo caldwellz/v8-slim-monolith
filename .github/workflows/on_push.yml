@@ -62,7 +62,7 @@ jobs:
           Set-Location -Path v8
           gclient sync --upstream --no-history
 
-      - name: Build and compress V8 monolith
+      - name: Build V8 monolith
         shell: pwsh
         run: |
           Set-Location -Path v8
@@ -72,30 +72,41 @@ jobs:
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           clang++ --version
           ninja -j 8 -C out.gn/${{ matrix.config.arch }}.release/ v8_monolith
-          Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+
+      - name: Archive and compress libraries
+        shell: pwsh
+        run: |
+          New-Item -ItemType directory -Path ./lib/
+          llvm-ar --version
+          llvm-ar rcs ./lib/libc++_chrome.a ./v8/out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++/libc++/*.o
+          llvm-ar rcs ./lib/libc++abi_chrome.a ./v8/out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++abi/libc++abi/*.o
+          Copy-Item -Path ./v8/out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ./lib/ -Container
+          Compress-Archive -Path ./lib -Destination ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+
+      - name: Release V8 libraries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          name: V8 Release ${{ env.V8_VERSION }}
+          tag_name: v${{ env.V8_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Since at least the Windows target will always be enabled, package the includes from its build
-      - name: Prepare out directory
+      - name: Prepare and compress include directory
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType directory -Path ./out/
-          Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./out/v8 -Container
-          Compress-Archive -Path ./out/v8 -DestinationPath ./v8_includes_${{ env.V8_VERSION }}.zip
+          New-Item -ItemType directory -Path ./include/
+          Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./include/v8 -Container
+          Copy-Item -Path ./v8/third_party/libc++/src/include/ -Recurse -Destination ./include/libc++ -Container
+          Copy-Item -Path ./v8/third_party/libc++abi/src/include/ -Recurse -Destination ./include/libc++abi -Container
+          Compress-Archive -Path ./include -DestinationPath ./v8_includes_${{ env.V8_VERSION }}.zip
 
       - name: Release V8 header files
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v2
         with:
           files: ./v8_includes_${{ env.V8_VERSION }}.zip
-          name: V8 Release ${{ env.V8_VERSION }}
-          tag_name: v${{ env.V8_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release V8 monolith
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
           name: V8 Release ${{ env.V8_VERSION }}
           tag_name: v${{ env.V8_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
