@@ -1,0 +1,6 @@
+
+// This has to be defined in __config_site, but it's currrently only set in v8/third_party/perfetto/buildtools
+// /libcxx_config/__config_site, not the main libcxx version for some reason; so this gets appended while packaging V8
+#ifndef _LIBCPP_HARDENING_MODE_DEFAULT
+#define _LIBCPP_HARDENING_MODE_DEFAULT _LIBCPP_HARDENING_MODE_NONE
+#endif

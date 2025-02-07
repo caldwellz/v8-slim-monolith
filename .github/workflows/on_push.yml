@@ -122,7 +122,10 @@ jobs:
           New-Item -ItemType directory -Path ./include/
           Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./include/v8 -Container
           Copy-Item -Path ./v8/third_party/libc++/src/include/ -Recurse -Destination ./include/libc++ -Container
-          Copy-Item -Path ./v8/third_party/libc++abi/src/include/ -Recurse -Destination ./include/libc++abi -Container
+          Copy-Item -Path ./v8/third_party/libc++abi/src/include/*.h -Destination ./include/libc++/ -Container
+          Copy-Item -Path ./v8/buildtools/third_party/libc++/__* -Destination ./include/libc++/ -Container
+          Get-Content "./include/libc++/__config_site","./config_site_hardening" | Set-Content "./__config_site" -Force
+          Copy-Item -Path "./__config_site" -Destination ./include/libc++/ -Container -Force
           Compress-Archive -Path ./include -DestinationPath ./v8_includes_${{ env.V8_VERSION }}.zip
 
       - name: Release V8 header files
