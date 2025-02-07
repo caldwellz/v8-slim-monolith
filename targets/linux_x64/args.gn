@@ -1,3 +1,5 @@
 # Platform-specific toolchain config
 target_cpu="x64"
+use_dbus=false
+use_gio=false
 use_glib=false

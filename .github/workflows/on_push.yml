@@ -56,27 +56,11 @@ jobs:
           echo "$pwd/depot_tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Checkout V8 source
-        run: |
-          git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
-          cd ./v8
-          gclient sync --upstream --no-history
-
-      # Since at least the Windows target will always be enabled, package the includes from its build
-      - name: Prepare out directory
-        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType directory -Path ./out/
-          Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./out/v8 -Container
-          Compress-Archive -Path ./out/v8 -DestinationPath ./include.zip
-      - name: Release V8 header files
-        if: runner.os == 'Windows'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ./include.zip
-          name: V8 Release ${{ env.V8_VERSION }}
-          tag_name: v${{ env.V8_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
+          Set-Location -Path v8
+          gclient sync --upstream --no-history
 
       - name: Build and compress V8 monolith
         shell: pwsh
@@ -88,12 +72,30 @@ jobs:
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           clang++ --version
           ninja -j 8 -C out.gn/${{ matrix.config.arch }}.release/ v8_monolith
-          Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          Compress-Archive -Path out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ../v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+
+      # Since at least the Windows target will always be enabled, package the includes from its build
+      - name: Prepare out directory
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType directory -Path ./out/
+          Copy-Item -Path ./v8/include -Recurse -Filter *.h -Destination ./out/v8 -Container
+          Compress-Archive -Path ./out/v8 -DestinationPath ./v8_includes_${{ env.V8_VERSION }}.zip
+
+      - name: Release V8 header files
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./v8_includes_${{ env.V8_VERSION }}.zip
+          name: V8 Release ${{ env.V8_VERSION }}
+          tag_name: v${{ env.V8_VERSION }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release V8 monolith
         uses: softprops/action-gh-release@v2
         with:
-          files: ./v8_monolith_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          files: ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
           name: V8 Release ${{ env.V8_VERSION }}
           tag_name: v${{ env.V8_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
