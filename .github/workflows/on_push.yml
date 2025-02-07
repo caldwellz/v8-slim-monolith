@@ -78,13 +78,6 @@ jobs:
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           gn gen out.gn/${{ matrix.config.arch }}.release
 
-      - name: Build hermetic libc++
-        shell: pwsh
-        run: |
-          Set-Location -Path v8
-          ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++
-          ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++/libc++/*${{ matrix.config.obj_suffix }}
-
       # V8 does not produce build targets for libc++abi on Windows because something something COM compatibility
       - name: Build hermetic libc++abi
         if: runner.os != 'Windows'
@@ -93,6 +86,13 @@ jobs:
           Set-Location -Path v8
           ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++abi
           ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++abi_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++abi/libc++abi/*${{ matrix.config.obj_suffix }}
+
+      - name: Build hermetic libc++
+        shell: pwsh
+        run: |
+          Set-Location -Path v8
+          ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++
+          ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++/libc++/*${{ matrix.config.obj_suffix }}
 
       - name: Build V8 monolith
         shell: pwsh
