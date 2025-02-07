@@ -16,23 +16,29 @@ jobs:
           - os: windows-latest
             name: windows
             arch: x64
-            lib_name: v8_monolith.lib
+            ar: llvm-ar
+            lib_prefix: ""
+            lib_suffix: .lib
+            obj_suffix: .obj
           - os: ubuntu-latest
             name: linux
             arch: x64
-            lib_name: libv8_monolith.a
+            ar: ar
+            lib_prefix: lib
+            lib_suffix: .a
+            obj_suffix: .o
     #          - os: macos-latest
     #            name: macos
     #            arch: x64
-    #            lib_name: libv8_monolith.a
+    #            ...
     #          - os: macos-latest
     #            name: macos
     #            arch: arm64
-    #            lib_name: libv8_monolith.a
+    #            ...
     #          - os: macos-latest
     #            name: ios
     #            arch: arm64
-    #            lib_name: libv8_monolith.a
+    #            ...
     env:
       DEPOT_TOOLS_WIN_TOOLCHAIN: 0
       NINJA_SUMMARIZE_BUILD: 1
@@ -62,31 +68,48 @@ jobs:
           Set-Location -Path v8
           gclient sync --upstream --no-history
 
+      - name: Configure V8
+        shell: pwsh
+        run: |
+          New-Item -ItemType directory -Path ./lib/
+          Set-Location -Path v8
+          python tools/dev/v8gen.py ${{ matrix.config.arch }}.release
+          Get-Content "../targets/shared.args.gn","../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
+          Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
+          gn gen out.gn/${{ matrix.config.arch }}.release
+
+      - name: Build hermetic libc++
+        shell: pwsh
+        run: |
+          Set-Location -Path v8
+          ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++
+          ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++/libc++/*${{ matrix.config.obj_suffix }}
+
+      # V8 does not produce build targets for libc++abi on Windows because something something COM compatibility
+      - name: Build hermetic libc++abi
+        if: runner.os != 'Windows'
+        shell: pwsh
+        run: |
+          Set-Location -Path v8
+          ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++abi
+          ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++abi_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++abi/libc++abi/*${{ matrix.config.obj_suffix }}
+
       - name: Build V8 monolith
         shell: pwsh
         run: |
           Set-Location -Path v8
-          python tools/dev/v8gen.py ${{ matrix.config.arch }}.release
-          Get-Content "../targets/shared.args.gn","../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
-          gn gen out.gn/${{ matrix.config.arch }}.release
-          Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
-          clang++ --version
-          ninja -j 8 -C out.gn/${{ matrix.config.arch }}.release/ v8_monolith
+          ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release v8_monolith
+          Copy-Item -Path ./out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_prefix }}v8_monolith${{ matrix.config.lib_suffix }} -Destination ../lib/ -Container
 
-      - name: Archive and compress libraries
+      - name: Compress libraries
         shell: pwsh
         run: |
-          New-Item -ItemType directory -Path ./lib/
-          llvm-ar --version
-          llvm-ar rcs ./lib/libc++_chrome.a ./v8/out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++/libc++/*.o
-          llvm-ar rcs ./lib/libc++abi_chrome.a ./v8/out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++abi/libc++abi/*.o
-          Copy-Item -Path ./v8/out.gn/${{ matrix.config.arch }}.release/obj/${{ matrix.config.lib_name }} -Destination ./lib/ -Container
-          Compress-Archive -Path ./lib -Destination ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          Compress-Archive -Path ./lib -Destination ./v8_libs_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
 
       - name: Release V8 libraries
         uses: softprops/action-gh-release@v2
         with:
-          files: ./v8_monolith_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
+          files: ./v8_libs_${{ env.V8_VERSION }}_${{ matrix.config.name }}_${{ matrix.config.arch }}.zip
           name: V8 Release ${{ env.V8_VERSION }}
           tag_name: v${{ env.V8_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}

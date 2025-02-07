@@ -17,10 +17,10 @@ use_custom_libcxx=true
 dcheck_always_on=false
 is_debug=false
 is_official_build=false
-is_on_release_branch=true
 strip_debug_info=true
 symbol_level=0
 v8_enable_debugging_features=false
+v8_is_on_release_branch=true
 v8_symbol_level=0
 
 # Configure future/extra features
