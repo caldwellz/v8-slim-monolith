@@ -13,16 +13,23 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - os: windows-latest
-            name: windows
-            arch: x64
-            ar: llvm-ar
-            lib_prefix: ""
-            lib_suffix: .lib
-            obj_suffix: .obj
-          - os: ubuntu-latest
+          # - os: windows-latest
+          #   name: windows
+          #   arch: x64
+          #   ar: llvm-ar
+          #   lib_prefix: ""
+          #   lib_suffix: .lib
+          #   obj_suffix: .obj
+          # - os: ubuntu-latest
+          #   name: linux
+          #   arch: x64
+          #   ar: ar
+          #   lib_prefix: lib
+          #   lib_suffix: .a
+          #   obj_suffix: .o
+          - os: ubuntu-24.04-arm
             name: linux
-            arch: x64
+            arch: arm64
             ar: ar
             lib_prefix: lib
             lib_suffix: .a
