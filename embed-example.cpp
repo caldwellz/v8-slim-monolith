@@ -1,57 +1,66 @@
-/* This is simple example of embedding V8.
-  It must be compiled using the C++20 standard, or you'll get "no member named '...' in namespace 'std'" errors.
-*/
-
-#define V8_COMPRESS_POINTERS 1 // Required because the V8 slim builds have v8_enable_pointer_compression turned on
+/* This is simple example of embedding the modern V8 monoliths built by this repository.
+ * It must be compiled using the bundled "hermetic" libc++ (except on Windows; V8 doesn't generate libc++abi build
+ * targets on Windows, and there's no easy workaround yet) and at least the C++20 standard, or you'll get weird errors.
+ *
+ * Needed CXXFLAGS on Windows:
+ *  -std=c++20 -D_MT -I/path/to/includes/v8 -I/path/to/includes
+ * Needed CXXFLAGS elsewhere:
+ *  -std=c++20 -nostdinc++ -isystem/path/to/includes/libc++ -I/path/to/includes/v8 -I/path/to/includes
+ * Needed LDFLAGS:
+ *  -L/path/to/libs
+ */
+#define V8_COMPRESS_POINTERS 1  // Required whenever v8_enable_pointer_compression is enabled
+#include <stdio.h>
 #include <v8/libplatform/libplatform.h>
 #include <v8/v8.h>
-#include <stdio.h>
 
-// Link against the monolith build
+using namespace v8;
+
 #pragma comment(lib, "v8_monolith")
-
+#ifdef _WIN32
 // Additional libraries needed on Windows
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "dbghelp.lib")
-
+#  pragma comment(lib, "winmm")
+#  pragma comment(lib, "dbghelp")
 // This would also be needed if using a less-slim V8 build
-//#pragma comment(lib, "Advapi32.lib")
+// #pragma comment(lib, "Advapi32")
+#else
+// Everything but Windows uses libc++
+#  pragma comment(lib, "c++_chrome")
+#  pragma comment(lib, "c++abi_chrome")
+#endif
 
 int main(int argc, char* argv[]) {
-  // These would be needed if v8_use_external_startup_data and v8_enable_i18n_support were turned on.
+  // These could be needed if v8_use_external_startup_data and v8_enable_i18n_support were enabled.
   // They are still safe no-ops with those options disabled, however.
-  //v8::V8::InitializeExternalStartupDataFromFile("snapshot_blob.bin");
-  //v8::V8::InitializeICU(nullptr);
+  // V8::InitializeExternalStartupDataFromFile("snapshot_blob.bin");
+  // V8::InitializeICU(nullptr);
 
   // Initialize V8
-  std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
-  v8::V8::InitializePlatform(platform.get());
-  v8::V8::Initialize();
+  std::unique_ptr<Platform> platform = platform::NewDefaultPlatform();
+  V8::InitializePlatform(platform.get());
+  V8::Initialize();
 
   // Create a new Isolate and make it the current one.
-  v8::Isolate::CreateParams create_params;
-  create_params.array_buffer_allocator_shared.reset(
-      v8::ArrayBuffer::Allocator::NewDefaultAllocator());
-  v8::Isolate* isolate = v8::Isolate::New(create_params);
+  Isolate::CreateParams create_params;
+  create_params.array_buffer_allocator_shared.reset(ArrayBuffer::Allocator::NewDefaultAllocator());
+  Isolate* isolate = Isolate::New(create_params);
   {
-    v8::Isolate::Scope isolate_scope(isolate);
+    Isolate::Scope isolate_scope(isolate);
     // Create a stack-allocated handle scope.
-    v8::HandleScope handle_scope(isolate);
+    HandleScope handle_scope(isolate);
     // Create a new context.
-    v8::Local<v8::Context> context = v8::Context::New(isolate);
+    Local<Context> context = Context::New(isolate);
     // Enter the context for compiling and running the hello world script.
-    v8::Context::Scope context_scope(context);
+    Context::Scope context_scope(context);
     {
       // Create a string containing the JavaScript source code.
-      v8::Local<v8::String> source =
-          v8::String::NewFromUtf8Literal(isolate, "'Hello' + ', World!'");
+      Local<String> source = String::NewFromUtf8Literal(isolate, "'Hello' + ', World!'");
       // Compile the source code.
-      v8::Local<v8::Script> script =
-          v8::Script::Compile(context, source).ToLocalChecked();
+      Local<Script> script = Script::Compile(context, source).ToLocalChecked();
       // Run the script to get the result.
-      v8::Local<v8::Value> result = script->Run(context).ToLocalChecked();
+      Local<Value> result = script->Run(context).ToLocalChecked();
       // Convert the result to an UTF8 string and print it.
-      v8::String::Utf8Value utf8(isolate, result);
+      String::Utf8Value utf8(isolate, result);
       printf("%s\n", *utf8);
     }
     {
@@ -61,13 +70,11 @@ int main(int argc, char* argv[]) {
       }
       main();)";
       // Create a string containing the JavaScript source code.
-      v8::Local<v8::String> source =
-          v8::String::NewFromUtf8Literal(isolate, csource);
+      Local<String> source = String::NewFromUtf8Literal(isolate, csource);
       // Compile the source code.
-      v8::Local<v8::Script> script =
-          v8::Script::Compile(context, source).ToLocalChecked();
+      Local<Script> script = Script::Compile(context, source).ToLocalChecked();
       // Run the script to get the result.
-      v8::Local<v8::Value> result = script->Run(context).ToLocalChecked();
+      Local<Value> result = script->Run(context).ToLocalChecked();
       // Convert the result to a uint32 and print it.
       uint32_t number = result->Uint32Value(context).ToChecked();
       printf("3 + 4 = %u\n", number);
@@ -76,8 +83,8 @@ int main(int argc, char* argv[]) {
 
   // Dispose the isolate and tear down V8.
   isolate->Dispose();
-  v8::V8::Dispose();
-  v8::V8::DisposePlatform();
+  V8::Dispose();
+  V8::DisposePlatform();
   printf("Success!");
   return 0;
 }
