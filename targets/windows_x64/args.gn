@@ -3,3 +3,9 @@ target_cpu="x64"
 is_cfi=false
 is_asan=false
 v8_enable_etw_stack_walking=false
+
+# TODO: Figure out how to force MSVC ABI usage or otherwise get around the lack of libc++abi targets on Windows.
+# But for now, disabling the custom libcxx is needed to avoid linker errors in embedding programs.
+clang_use_chrome_plugins=false
+use_custom_libcxx=false
+use_custom_libcxx_for_host=false

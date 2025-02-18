@@ -3,14 +3,14 @@ is_component_build=false
 v8_monolithic=true
 v8_use_external_startup_data=false
 
-# Use the "hermetic" toolchain and libc++; the required libs and includes will be bundled with the output
+# Uses the "hermetic" toolchain and libc++ by default; the required libs and includes will be bundled with the output
 is_clang=true
-use_custom_libcxx=true
 
-# If using a custom toolchain (e.g. for cross compiling), add these as well
+# If using a custom LLVM toolchain (e.g. for cross compiling), add these as well
 #custom_toolchain="//build/toolchain/linux/unbundle:default"
 #host_toolchain="//build/toolchain/linux/unbundle:default"
 #clang_use_chrome_plugins=false
+#use_custom_libcxx_for_host=true
 
 # Build in release mode
 # DCHECK is normally disabled by is_official_build, but since we're not building Chrome, we use dcheck_always_on instead

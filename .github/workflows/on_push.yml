@@ -78,7 +78,19 @@ jobs:
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           gn gen out.gn/${{ matrix.config.arch }}.release
 
-      # V8 does not produce build targets for libc++abi on Windows because something something COM compatibility
+      # V8 does not produce build targets for libc++abi on Windows because something something COM compatibility.
+      # So, it needs to be built manually. TODO: This doesn't actually work yet. Plus, it may break usage of MSVC libs.
+      #- name: Build hermetic libc++abi
+      #  if: runner.os == 'Windows'
+      #  shell: pwsh
+      #  run: |
+      #    rm depot_tools/ninja
+      #    New-Item -ItemType directory -Path ./abibuild/
+      #    Set-Location -Path abibuild
+      #    cmake -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLIBCXXABI_INSTALL_RUNTIME_DIR=$pwd/../lib -S ..\v8\third_party\libc++abi\src
+      #    ninja -j 8 install
+
+      # Other platforms can just use the existing build targets
       - name: Build hermetic libc++abi
         if: runner.os != 'Windows'
         shell: pwsh
@@ -87,7 +99,9 @@ jobs:
           ninja -j 8 -C ./out.gn/${{ matrix.config.arch }}.release libc++abi
           ${{ matrix.config.ar }} rcs ../lib/${{ matrix.config.lib_prefix }}c++abi_chrome${{ matrix.config.lib_suffix }} ./out.gn/${{ matrix.config.arch }}.release/obj/buildtools/third_party/libc++abi/libc++abi/*${{ matrix.config.obj_suffix }}
 
+      # TODO: This works on Windows too, but it's disabled until we can start using the custom libc++abi
       - name: Build hermetic libc++
+        if: runner.os != 'Windows'
         shell: pwsh
         run: |
           Set-Location -Path v8
