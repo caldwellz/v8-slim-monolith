@@ -74,6 +74,13 @@ jobs:
           git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
           gclient sync --no-history
 
+      - name: Fetch Debian sysroot
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: |
+          Set-Location -Path v8
+          python build/linux/sysroot_scripts/install-sysroot.py --arch=${{ matrix.config.arch }}
+
       - name: Configure V8
         shell: pwsh
         run: |
