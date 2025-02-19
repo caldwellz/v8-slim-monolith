@@ -1,8 +1,6 @@
 # Platform-specific toolchain config
-target_os=["android", "linux"]
 target_cpu="arm64"
 v8_target_cpu = "arm64"
-arm_float_abi="hard"
 use_dbus=false
 use_gio=false
 use_glib=false
