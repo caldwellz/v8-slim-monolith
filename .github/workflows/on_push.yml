@@ -27,7 +27,7 @@ jobs:
           #   lib_prefix: lib
           #   lib_suffix: .a
           #   obj_suffix: .o
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-latest
             name: linux
             arch: arm64
             ar: ar
@@ -73,14 +73,6 @@ jobs:
         run: |
           git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
           gclient sync --no-history
-
-      - name: Install ARM toolchain
-        if: runner.arch == 'arm64'
-        shell: pwsh
-        run: |
-          uname -a
-          Set-Location -Path v8
-          python ./build/install-build-deps.py --arm --no-syms --no-chromeos-fonts --no-nacl --no-prompt
 
       - name: Configure V8
         shell: pwsh
