@@ -72,6 +72,15 @@ jobs:
         shell: pwsh
         run: |
           git clone --depth 1 --branch ${{ env.V8_VERSION }} https://github.com/v8/v8.git
+          gclient sync --no-history
+
+      - name: Install ARM toolchain
+        if: runner.arch == 'arm64'
+        shell: pwsh
+        run: |
+          uname -a
+          Set-Location -Path v8
+          python ./build/install-build-deps.py --arm --no-syms --no-chromeos-fonts --no-nacl --no-prompt
 
       - name: Configure V8
         shell: pwsh
@@ -82,15 +91,6 @@ jobs:
           Get-Content "../targets/shared.args.gn","../targets/${{ matrix.config.name }}_${{ matrix.config.arch }}/args.gn" | Set-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" -Force
           Get-Content "./out.gn/${{ matrix.config.arch }}.release/args.gn" | Write-Output
           gn gen out.gn/${{ matrix.config.arch }}.release
-          gclient sync --upstream --no-history
-
-      - name: Install ARM toolchain
-        if: runner.arch == 'arm64'
-        shell: pwsh
-        run: |
-          uname -a
-          Set-Location -Path v8
-          python ./build/install-build-deps.py --arm --no-syms --no-chromeos-fonts --no-nacl --no-prompt
 
       # V8 does not produce build targets for libc++abi on Windows because something something COM compatibility.
       # So, it needs to be built manually. TODO: This doesn't actually work yet. Plus, it may break usage of MSVC libs.
